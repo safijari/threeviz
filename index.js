@@ -195,6 +195,7 @@ class ThreeViz {
         else {
             var geom = new THREE.PlaneGeometry();
             var material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+            material.transparent = true;
             plane = new THREE.Mesh(geom, material);
             this._add_obj(plane, label);
         }
@@ -355,7 +356,7 @@ function startWebsocket() {
                 scn.add_plane(data.label, data.position, data.orientation, data.scale_x, data.scale_y);
             }
             else if (data.type == "plane_tex") {
-                scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y);
+                scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y, data.opacity);
             }
         });
     };
