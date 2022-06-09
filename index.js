@@ -2,386 +2,6 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/helpers.ts":
-/*!************************!*\
-  !*** ./src/helpers.ts ***!
-  \************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ThreeViz = void 0;
-const THREE = __importStar(__webpack_require__(/*! three */ "./node_modules/three/build/three.module.js"));
-const dat = __importStar(__webpack_require__(/*! dat.gui */ "./node_modules/dat.gui/build/dat.gui.module.js"));
-const OrbitControls_js_1 = __webpack_require__(/*! three/examples/jsm/controls/OrbitControls.js */ "./node_modules/three/examples/jsm/controls/OrbitControls.js");
-class ThreeViz {
-    constructor(fov, width, height) {
-        this.scene = new THREE.Scene();
-        this.ray_caster = new THREE.Raycaster();
-        this.gui = new dat.GUI({ autoPlace: true });
-        this.renderer = new THREE.WebGLRenderer();
-        this.grid = new THREE.GridHelper(10, 10);
-        this.loader = new THREE.TextureLoader();
-        this.settings = { fov: 75, status: "none", default_cam: () => { this.set_default_position(); }, clear_all: () => { this.clear_all_objects(); } };
-        this.camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 1000);
-        this.light = new THREE.AmbientLight(0x404040); // soft white light
-        this.light.intensity = 10;
-        this.scene.add(this.light);
-        this.scene.background = new THREE.Color(0xf0f0f0);
-        this.objects = {};
-        this.renderer.setSize(width, height);
-        this.set_up(this.camera);
-        this.set_up(this.grid);
-        this.set_orientation(this.grid, THREE.MathUtils.degToRad(90), 0, 0);
-        this.scene.add(this.grid);
-        let gridmat = this._get_first_mat(this.grid);
-        gridmat.opacity = 0.25;
-        gridmat.transparent = true;
-        this.controls = new OrbitControls_js_1.OrbitControls(this.camera, this.renderer.domElement);
-        this.set_default_position();
-        this.reload_camera_posision();
-        this.controls.addEventListener("change", () => { sessionStorage.setItem("camera_position", JSON.stringify(this.camera.position)); sessionStorage.setItem("camera_quat", JSON.stringify(this.camera.quaternion)); });
-        this.add_axes('root', null, null, 0.2);
-        this.gui.add(this.settings, "status");
-        this.gui.add(this.settings, "fov", 50, 100).onChange((v) => { this.camera.fov = v; this.camera.updateProjectionMatrix(); });
-        this.gui.add(this.settings, "default_cam");
-        this.gui.add(this.settings, "clear_all");
-    }
-    move_camera(x, y, z, lx, ly, lz) {
-        this.camera.position.x = x;
-        this.camera.position.y = y;
-        this.camera.position.z = z;
-        this.camera.lookAt(lx, ly, lz);
-        this.controls.target = new THREE.Vector3(lx, ly, lz);
-        this.camera.updateProjectionMatrix();
-    }
-    set_default_position() {
-        this.move_camera(5, 5, 5, 0, 0, 0);
-    }
-    reload_camera_posision() {
-        var pos_str = sessionStorage.getItem("camera_position");
-        if (pos_str == null) {
-            return;
-        }
-        var pos = JSON.parse(pos_str);
-        this.camera.position.x = pos.x;
-        this.camera.position.y = pos.y;
-        this.camera.position.z = pos.z;
-        var pos_str = sessionStorage.getItem("camera_quat");
-        if (pos_str == null) {
-            return;
-        }
-        var pos = JSON.parse(pos_str);
-        this.camera.quaternion.x = pos._x;
-        this.camera.quaternion.y = pos._y;
-        this.camera.quaternion.z = pos._z;
-        this.camera.quaternion.w = pos._w;
-    }
-    update_size(width, height) {
-        this.renderer.setSize(width, height);
-        this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
-    }
-    render() { this.renderer.render(this.scene, this.camera); }
-    set_up(obj) { obj.up = new THREE.Vector3(0, 0, 1); }
-    _get_first_mat(obj) {
-        let mat;
-        if (obj.material instanceof THREE.Material) {
-            mat = obj.material;
-        }
-        else {
-            mat = obj.material[0];
-        }
-        return mat;
-    }
-    _apply_xyz(prop, x, y, z) {
-        prop.x = x;
-        prop.y = y;
-        prop.z = z;
-    }
-    set_orientation(obj, x, y, z, w = null) {
-        if (w != null) {
-            obj.setRotationFromQuaternion(new THREE.Quaternion(x, y, z, w));
-        }
-        else {
-            obj.setRotationFromEuler(new THREE.Euler(x, y, z));
-        }
-    }
-    set_position(obj, x, y, z) {
-        this._apply_xyz(obj.position, x, y, z);
-    }
-    set_scale(obj, x, y, z) {
-        this._apply_xyz(obj.scale, x, y, z);
-    }
-    _set_position_orientation_if_provided(obj, position, orientation) {
-        let p = position;
-        if (p != null) {
-            this.set_position(obj, p.x, p.y, p.z);
-        }
-        let q = orientation;
-        if (q != null) {
-            this.set_orientation(obj, q.x, q.y, q.z, q.w);
-        }
-    }
-    _add_obj(obj, label) {
-        this.set_up(obj);
-        this.objects[label] = obj;
-        this.scene.add(obj);
-    }
-    add_cube_cloud(label, position, orientation, color = "#ff0000", xarr, yarr, zarr, opacity = 1.0, point_size = 0.1) {
-        let geometry = new THREE.BoxBufferGeometry(point_size, point_size, point_size);
-        var wireframe = new THREE.WireframeGeometry(geometry);
-        let material = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: opacity });
-        var group = new THREE.Group();
-        for (var i = 0; i < xarr.length; i++) {
-            var cube = new THREE.Mesh(geometry, material);
-            cube.position.set(xarr[i], yarr[i], zarr[i]);
-            group.add(cube);
-        }
-        this._add_obj(group, label);
-        this._set_position_orientation_if_provided(group, position, orientation);
-    }
-    delete_object(label) {
-        var obj = this.objects[label];
-        this.scene.remove(obj);
-        var geom = obj.geometry;
-        geom.dispose();
-        delete this.objects[label];
-    }
-    clear_all_objects() {
-        for (var label in this.objects) {
-            this.delete_object(label);
-        }
-        this.add_axes('root', null, null, 0.2);
-    }
-    add_axes(label, position, orientation, size = 1.0) {
-        let axes;
-        if (label in this.objects) {
-            axes = this.objects[label];
-        }
-        else {
-            axes = new THREE.AxesHelper(1);
-            this._add_obj(axes, label);
-        }
-        this.set_scale(axes, size, size, size);
-        this._set_position_orientation_if_provided(axes, position, orientation);
-    }
-    add_plane_texture(label, texture_uri, position, orientation, scale_x = 1.0, scale_y = 1.0, opacity = 1.0) {
-        // var uri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg =="
-        let plane;
-        var tex = THREE.ImageUtils.loadTexture(texture_uri);
-        if (label in this.objects) {
-            plane = this.objects[label];
-        }
-        else {
-            var geom = new THREE.PlaneGeometry();
-            var material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-            material.transparent = true;
-            plane = new THREE.Mesh(geom, material);
-            this._add_obj(plane, label);
-        }
-        this._set_position_orientation_if_provided(plane, position, orientation);
-        var mat = plane.material;
-        mat.map = tex;
-        mat.opacity = opacity;
-        plane.scale.set(scale_x, scale_y, 1.0);
-    }
-    add_plane(label, position, orientation, color = "#ff0000", scale_x = 1.0, scale_y = 1.0, opacity = 1.0) {
-        let plane;
-        if (label in this.objects) {
-            plane = this.objects[label];
-        }
-        else {
-            var geom = new THREE.PlaneGeometry();
-            var material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-            plane = new THREE.Mesh(geom, material);
-            this._add_obj(plane, label);
-        }
-        this._set_position_orientation_if_provided(plane, position, orientation);
-        var mat = plane.material;
-        mat.color.set(color);
-        mat.opacity = opacity;
-        plane.scale.set(scale_x, scale_y, 1.0);
-    }
-    add_pointcloud(label, position, orientation, color = "#ff0000", point_arrays, opacity = 1.0, point_size = 0.1) {
-        let obj;
-        if (label in this.objects) {
-            obj = this.objects[label];
-            let geom = obj.geometry;
-            this.scene.remove(obj);
-            geom.dispose();
-        }
-        let mat = new THREE.PointsMaterial({
-            color: new THREE.Color(color), size: point_size,
-            transparent: true, opacity: opacity
-        });
-        let geom = new THREE.BufferGeometry();
-        geom.addAttribute('position', new THREE.BufferAttribute(new Float32Array(point_arrays), 3));
-        obj = new THREE.Points(geom, mat);
-        this._add_obj(obj, label);
-        mat.color = new THREE.Color(color);
-        mat.opacity = opacity;
-        this._set_position_orientation_if_provided(obj, position, orientation);
-    }
-    add_line(label, point_arrays, color = "#000000", thickness = 0.1, opacity = 1.0) {
-        let obj;
-        if (label in this.objects) {
-            obj = this.objects[label];
-            this.scene.remove(obj);
-        }
-        let mat = new THREE.LineBasicMaterial({
-            color: new THREE.Color(color), linewidth: thickness,
-            transparent: true, opacity: opacity
-        });
-        let geom = new THREE.BufferGeometry();
-        geom.addAttribute('position', new THREE.BufferAttribute(new Float32Array(point_arrays), 3));
-        obj = new THREE.Line(geom, mat);
-        this._add_obj(obj, label);
-    }
-    _snapshot() {
-        let strMime = "image/png";
-        return this.renderer.domElement.toDataURL(strMime);
-    }
-}
-exports.ThreeViz = ThreeViz;
-
-
-/***/ }),
-
-/***/ "./src/index.ts":
-/*!**********************!*\
-  !*** ./src/index.ts ***!
-  \**********************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const helpers_1 = __webpack_require__(/*! ./helpers */ "./src/helpers.ts");
-const THREE = __importStar(__webpack_require__(/*! three */ "./node_modules/three/build/three.module.js"));
-const messagepack_1 = __webpack_require__(/*! messagepack */ "./node_modules/messagepack/dist/messagepack.es.js");
-let padding = 20;
-let winWidth = window.innerWidth;
-let winHeight = window.innerHeight;
-let scn = new helpers_1.ThreeViz(75, window.innerWidth - padding, window.innerHeight - padding);
-const queryString = window.location.search;
-const urlParams = new URLSearchParams(queryString);
-let port = urlParams.get('port');
-if (port == null) {
-    port = '8765';
-}
-let host = urlParams.get('host');
-if (host == null) {
-    host = "localhost";
-}
-else {
-    host = window.location.host;
-    host = host.split(":")[0];
-}
-function startWebsocket() {
-    let ws;
-    ws = new WebSocket('ws://' + host + ":" + port + '/ws');
-    ws.onclose = function () {
-        ws = null;
-        setTimeout(startWebsocket, 1250);
-    };
-    ws.onmessage = function (ev) {
-        ev.data.arrayBuffer().then(function (val) {
-            let data = messagepack_1.decode(val);
-            if (data.type == "clear") {
-                scn.clear_all_objects();
-            }
-            if (data.type == "delete") {
-                scn.delete_object(data.label);
-            }
-            if (data.type == "move_camera") {
-                scn.move_camera(data.x, data.y, data.z, data.lx, data.ly, data.lz);
-            }
-            if (data.type == "axes") {
-                scn.add_axes(data.label, data.position, data.orientation, data.size);
-            }
-            else if (data.type == "axes_list") {
-                for (var i = 0; i < data.elements.length; i++) {
-                    var el = data.elements[i];
-                    scn.add_axes(el.label, el.position, el.orientation, el.size);
-                }
-            }
-            else if (data.type == "pointcloud") {
-                scn.add_pointcloud(data.label, data.position, data.orientation, data.color, data.arrs, data.opacity, data.size);
-            }
-            else if (data.type == "cubecloud") {
-                scn.add_cube_cloud(data.label, data.position, data.orientation, data.color, data.xarr, data.yarr, data.zarr, data.opacity, data.size);
-            }
-            else if (data.type == "line") {
-                scn.add_line(data.label, data.positions, data.color, data.thickness, data.opacity);
-            }
-            else if (data.type == "plane") {
-                scn.add_plane(data.label, data.position, data.orientation, data.scale_x, data.scale_y);
-            }
-            else if (data.type == "plane_tex") {
-                scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y, data.opacity);
-            }
-        });
-    };
-}
-console.log(scn);
-// add axis to the scene
-let axis = new THREE.AxesHelper(10);
-document.body.appendChild(scn.renderer.domElement);
-function animate() {
-    setTimeout(function () {
-        requestAnimationFrame(animate);
-    }, 1000 / 60);
-    scn.render();
-    if (winWidth != window.innerWidth || winHeight != window.innerHeight) {
-        winWidth = window.innerWidth;
-        winHeight = window.innerHeight;
-        scn.update_size(winWidth - padding, winHeight - padding);
-    }
-}
-startWebsocket();
-animate();
-
-
-/***/ }),
-
 /***/ "./node_modules/dat.gui/build/dat.gui.module.js":
 /*!******************************************************!*\
   !*** ./node_modules/dat.gui/build/dat.gui.module.js ***!
@@ -390,16 +10,16 @@ animate();
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "GUI": () => (/* binding */ GUI$1),
 /* harmony export */   "color": () => (/* binding */ color),
 /* harmony export */   "controllers": () => (/* binding */ controllers),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
 /* harmony export */   "dom": () => (/* binding */ dom$1),
-/* harmony export */   "gui": () => (/* binding */ gui),
-/* harmony export */   "GUI": () => (/* binding */ GUI$1),
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */   "gui": () => (/* binding */ gui)
 /* harmony export */ });
 /**
  * dat-gui JavaScript Controller Library
- * http://code.google.com/p/dat-gui
+ * https://github.com/dataarts/dat.gui
  *
  * Copyright 2011 Data Arts Team, Google Creative Lab
  *
@@ -615,7 +235,7 @@ var INTERPRETATIONS = [
     },
     CSS_RGB: {
       read: function read(original) {
-        var test = original.match(/^rgb\(\s*(.+)\s*,\s*(.+)\s*,\s*(.+)\s*\)/);
+        var test = original.match(/^rgb\(\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*\)/);
         if (test === null) {
           return false;
         }
@@ -630,7 +250,7 @@ var INTERPRETATIONS = [
     },
     CSS_RGBA: {
       read: function read(original) {
-        var test = original.match(/^rgba\(\s*(.+)\s*,\s*(.+)\s*,\s*(.+)\s*,\s*(.+)\s*\)/);
+        var test = original.match(/^rgba\(\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*\)/);
         if (test === null) {
           return false;
         }
@@ -1708,13 +1328,13 @@ var ColorController = function (_Controller) {
       }
     });
     dom.bind(_this2.__input, 'blur', onBlur);
-    dom.bind(_this2.__selector, 'mousedown', function ()        {
-      dom.addClass(this, 'drag').bind(window, 'mouseup', function ()        {
+    dom.bind(_this2.__selector, 'mousedown', function () {
+      dom.addClass(this, 'drag').bind(window, 'mouseup', function () {
         dom.removeClass(_this.__selector, 'drag');
       });
     });
-    dom.bind(_this2.__selector, 'touchstart', function ()        {
-      dom.addClass(this, 'drag').bind(window, 'touchend', function ()        {
+    dom.bind(_this2.__selector, 'touchstart', function () {
+      dom.addClass(this, 'drag').bind(window, 'touchend', function () {
         dom.removeClass(_this.__selector, 'drag');
       });
     });
@@ -2063,7 +1683,7 @@ var CenteredDiv = function () {
   return CenteredDiv;
 }();
 
-var styleSheet = ___$insertStyle(".dg ul{list-style:none;margin:0;padding:0;width:100%;clear:both}.dg.ac{position:fixed;top:0;left:0;right:0;height:0;z-index:0}.dg:not(.ac) .main{overflow:hidden}.dg.main{-webkit-transition:opacity .1s linear;-o-transition:opacity .1s linear;-moz-transition:opacity .1s linear;transition:opacity .1s linear}.dg.main.taller-than-window{overflow-y:auto}.dg.main.taller-than-window .close-button{opacity:1;margin-top:-1px;border-top:1px solid #2c2c2c}.dg.main ul.closed .close-button{opacity:1 !important}.dg.main:hover .close-button,.dg.main .close-button.drag{opacity:1}.dg.main .close-button{-webkit-transition:opacity .1s linear;-o-transition:opacity .1s linear;-moz-transition:opacity .1s linear;transition:opacity .1s linear;border:0;line-height:19px;height:20px;cursor:pointer;text-align:center;background-color:#000}.dg.main .close-button.close-top{position:relative}.dg.main .close-button.close-bottom{position:absolute}.dg.main .close-button:hover{background-color:#111}.dg.a{float:right;margin-right:15px;overflow-y:visible}.dg.a.has-save>ul.close-top{margin-top:0}.dg.a.has-save>ul.close-bottom{margin-top:27px}.dg.a.has-save>ul.closed{margin-top:0}.dg.a .save-row{top:0;z-index:1002}.dg.a .save-row.close-top{position:relative}.dg.a .save-row.close-bottom{position:fixed}.dg li{-webkit-transition:height .1s ease-out;-o-transition:height .1s ease-out;-moz-transition:height .1s ease-out;transition:height .1s ease-out;-webkit-transition:overflow .1s linear;-o-transition:overflow .1s linear;-moz-transition:overflow .1s linear;transition:overflow .1s linear}.dg li:not(.folder){cursor:auto;height:27px;line-height:27px;padding:0 4px 0 5px}.dg li.folder{padding:0;border-left:4px solid rgba(0,0,0,0)}.dg li.title{cursor:pointer;margin-left:-4px}.dg .closed li:not(.title),.dg .closed ul li,.dg .closed ul li>*{height:0;overflow:hidden;border:0}.dg .cr{clear:both;padding-left:3px;height:27px;overflow:hidden}.dg .property-name{cursor:default;float:left;clear:left;width:40%;overflow:hidden;text-overflow:ellipsis}.dg .c{float:left;width:60%;position:relative}.dg .c input[type=text]{border:0;margin-top:4px;padding:3px;width:100%;float:right}.dg .has-slider input[type=text]{width:30%;margin-left:0}.dg .slider{float:left;width:66%;margin-left:-5px;margin-right:0;height:19px;margin-top:4px}.dg .slider-fg{height:100%}.dg .c input[type=checkbox]{margin-top:7px}.dg .c select{margin-top:5px}.dg .cr.function,.dg .cr.function .property-name,.dg .cr.function *,.dg .cr.boolean,.dg .cr.boolean *{cursor:pointer}.dg .cr.color{overflow:visible}.dg .selector{display:none;position:absolute;margin-left:-9px;margin-top:23px;z-index:10}.dg .c:hover .selector,.dg .selector.drag{display:block}.dg li.save-row{padding:0}.dg li.save-row .button{display:inline-block;padding:0px 6px}.dg.dialogue{background-color:#222;width:460px;padding:15px;font-size:13px;line-height:15px}#dg-new-constructor{padding:10px;color:#222;font-family:Monaco, monospace;font-size:10px;border:0;resize:none;box-shadow:inset 1px 1px 1px #888;word-wrap:break-word;margin:12px 0;display:block;width:440px;overflow-y:scroll;height:100px;position:relative}#dg-local-explain{display:none;font-size:11px;line-height:17px;border-radius:3px;background-color:#333;padding:8px;margin-top:10px}#dg-local-explain code{font-size:10px}#dat-gui-save-locally{display:none}.dg{color:#eee;font:11px 'Lucida Grande', sans-serif;text-shadow:0 -1px 0 #111}.dg.main::-webkit-scrollbar{width:5px;background:#1a1a1a}.dg.main::-webkit-scrollbar-corner{height:0;display:none}.dg.main::-webkit-scrollbar-thumb{border-radius:5px;background:#676767}.dg li:not(.folder){background:#1a1a1a;border-bottom:1px solid #2c2c2c}.dg li.save-row{line-height:25px;background:#dad5cb;border:0}.dg li.save-row select{margin-left:5px;width:108px}.dg li.save-row .button{margin-left:5px;margin-top:1px;border-radius:2px;font-size:9px;line-height:7px;padding:4px 4px 5px 4px;background:#c5bdad;color:#fff;text-shadow:0 1px 0 #b0a58f;box-shadow:0 -1px 0 #b0a58f;cursor:pointer}.dg li.save-row .button.gears{background:#c5bdad url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAANCAYAAAB/9ZQ7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQJJREFUeNpiYKAU/P//PwGIC/ApCABiBSAW+I8AClAcgKxQ4T9hoMAEUrxx2QSGN6+egDX+/vWT4e7N82AMYoPAx/evwWoYoSYbACX2s7KxCxzcsezDh3evFoDEBYTEEqycggWAzA9AuUSQQgeYPa9fPv6/YWm/Acx5IPb7ty/fw+QZblw67vDs8R0YHyQhgObx+yAJkBqmG5dPPDh1aPOGR/eugW0G4vlIoTIfyFcA+QekhhHJhPdQxbiAIguMBTQZrPD7108M6roWYDFQiIAAv6Aow/1bFwXgis+f2LUAynwoIaNcz8XNx3Dl7MEJUDGQpx9gtQ8YCueB+D26OECAAQDadt7e46D42QAAAABJRU5ErkJggg==) 2px 1px no-repeat;height:7px;width:8px}.dg li.save-row .button:hover{background-color:#bab19e;box-shadow:0 -1px 0 #b0a58f}.dg li.folder{border-bottom:0}.dg li.title{padding-left:16px;background:#000 url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlI+hKgFxoCgAOw==) 6px 10px no-repeat;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.2)}.dg .closed li.title{background-image:url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlGIWqMCbWAEAOw==)}.dg .cr.boolean{border-left:3px solid #806787}.dg .cr.color{border-left:3px solid}.dg .cr.function{border-left:3px solid #e61d5f}.dg .cr.number{border-left:3px solid #2FA1D6}.dg .cr.number input[type=text]{color:#2FA1D6}.dg .cr.string{border-left:3px solid #1ed36f}.dg .cr.string input[type=text]{color:#1ed36f}.dg .cr.function:hover,.dg .cr.boolean:hover{background:#111}.dg .c input[type=text]{background:#303030;outline:none}.dg .c input[type=text]:hover{background:#3c3c3c}.dg .c input[type=text]:focus{background:#494949;color:#fff}.dg .c .slider{background:#303030;cursor:ew-resize}.dg .c .slider-fg{background:#2FA1D6;max-width:100%}.dg .c .slider:hover{background:#3c3c3c}.dg .c .slider:hover .slider-fg{background:#44abda}\n");
+var styleSheet = ___$insertStyle(".dg ul{list-style:none;margin:0;padding:0;width:100%;clear:both}.dg.ac{position:fixed;top:0;left:0;right:0;height:0;z-index:0}.dg:not(.ac) .main{overflow:hidden}.dg.main{-webkit-transition:opacity .1s linear;-o-transition:opacity .1s linear;-moz-transition:opacity .1s linear;transition:opacity .1s linear}.dg.main.taller-than-window{overflow-y:auto}.dg.main.taller-than-window .close-button{opacity:1;margin-top:-1px;border-top:1px solid #2c2c2c}.dg.main ul.closed .close-button{opacity:1 !important}.dg.main:hover .close-button,.dg.main .close-button.drag{opacity:1}.dg.main .close-button{-webkit-transition:opacity .1s linear;-o-transition:opacity .1s linear;-moz-transition:opacity .1s linear;transition:opacity .1s linear;border:0;line-height:19px;height:20px;cursor:pointer;text-align:center;background-color:#000}.dg.main .close-button.close-top{position:relative}.dg.main .close-button.close-bottom{position:absolute}.dg.main .close-button:hover{background-color:#111}.dg.a{float:right;margin-right:15px;overflow-y:visible}.dg.a.has-save>ul.close-top{margin-top:0}.dg.a.has-save>ul.close-bottom{margin-top:27px}.dg.a.has-save>ul.closed{margin-top:0}.dg.a .save-row{top:0;z-index:1002}.dg.a .save-row.close-top{position:relative}.dg.a .save-row.close-bottom{position:fixed}.dg li{-webkit-transition:height .1s ease-out;-o-transition:height .1s ease-out;-moz-transition:height .1s ease-out;transition:height .1s ease-out;-webkit-transition:overflow .1s linear;-o-transition:overflow .1s linear;-moz-transition:overflow .1s linear;transition:overflow .1s linear}.dg li:not(.folder){cursor:auto;height:27px;line-height:27px;padding:0 4px 0 5px}.dg li.folder{padding:0;border-left:4px solid rgba(0,0,0,0)}.dg li.title{cursor:pointer;margin-left:-4px}.dg .closed li:not(.title),.dg .closed ul li,.dg .closed ul li>*{height:0;overflow:hidden;border:0}.dg .cr{clear:both;padding-left:3px;height:27px;overflow:hidden}.dg .property-name{cursor:default;float:left;clear:left;width:40%;overflow:hidden;text-overflow:ellipsis}.dg .cr.function .property-name{width:100%}.dg .c{float:left;width:60%;position:relative}.dg .c input[type=text]{border:0;margin-top:4px;padding:3px;width:100%;float:right}.dg .has-slider input[type=text]{width:30%;margin-left:0}.dg .slider{float:left;width:66%;margin-left:-5px;margin-right:0;height:19px;margin-top:4px}.dg .slider-fg{height:100%}.dg .c input[type=checkbox]{margin-top:7px}.dg .c select{margin-top:5px}.dg .cr.function,.dg .cr.function .property-name,.dg .cr.function *,.dg .cr.boolean,.dg .cr.boolean *{cursor:pointer}.dg .cr.color{overflow:visible}.dg .selector{display:none;position:absolute;margin-left:-9px;margin-top:23px;z-index:10}.dg .c:hover .selector,.dg .selector.drag{display:block}.dg li.save-row{padding:0}.dg li.save-row .button{display:inline-block;padding:0px 6px}.dg.dialogue{background-color:#222;width:460px;padding:15px;font-size:13px;line-height:15px}#dg-new-constructor{padding:10px;color:#222;font-family:Monaco, monospace;font-size:10px;border:0;resize:none;box-shadow:inset 1px 1px 1px #888;word-wrap:break-word;margin:12px 0;display:block;width:440px;overflow-y:scroll;height:100px;position:relative}#dg-local-explain{display:none;font-size:11px;line-height:17px;border-radius:3px;background-color:#333;padding:8px;margin-top:10px}#dg-local-explain code{font-size:10px}#dat-gui-save-locally{display:none}.dg{color:#eee;font:11px 'Lucida Grande', sans-serif;text-shadow:0 -1px 0 #111}.dg.main::-webkit-scrollbar{width:5px;background:#1a1a1a}.dg.main::-webkit-scrollbar-corner{height:0;display:none}.dg.main::-webkit-scrollbar-thumb{border-radius:5px;background:#676767}.dg li:not(.folder){background:#1a1a1a;border-bottom:1px solid #2c2c2c}.dg li.save-row{line-height:25px;background:#dad5cb;border:0}.dg li.save-row select{margin-left:5px;width:108px}.dg li.save-row .button{margin-left:5px;margin-top:1px;border-radius:2px;font-size:9px;line-height:7px;padding:4px 4px 5px 4px;background:#c5bdad;color:#fff;text-shadow:0 1px 0 #b0a58f;box-shadow:0 -1px 0 #b0a58f;cursor:pointer}.dg li.save-row .button.gears{background:#c5bdad url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAANCAYAAAB/9ZQ7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQJJREFUeNpiYKAU/P//PwGIC/ApCABiBSAW+I8AClAcgKxQ4T9hoMAEUrxx2QSGN6+egDX+/vWT4e7N82AMYoPAx/evwWoYoSYbACX2s7KxCxzcsezDh3evFoDEBYTEEqycggWAzA9AuUSQQgeYPa9fPv6/YWm/Acx5IPb7ty/fw+QZblw67vDs8R0YHyQhgObx+yAJkBqmG5dPPDh1aPOGR/eugW0G4vlIoTIfyFcA+QekhhHJhPdQxbiAIguMBTQZrPD7108M6roWYDFQiIAAv6Aow/1bFwXgis+f2LUAynwoIaNcz8XNx3Dl7MEJUDGQpx9gtQ8YCueB+D26OECAAQDadt7e46D42QAAAABJRU5ErkJggg==) 2px 1px no-repeat;height:7px;width:8px}.dg li.save-row .button:hover{background-color:#bab19e;box-shadow:0 -1px 0 #b0a58f}.dg li.folder{border-bottom:0}.dg li.title{padding-left:16px;background:#000 url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlI+hKgFxoCgAOw==) 6px 10px no-repeat;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.2)}.dg .closed li.title{background-image:url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlGIWqMCbWAEAOw==)}.dg .cr.boolean{border-left:3px solid #806787}.dg .cr.color{border-left:3px solid}.dg .cr.function{border-left:3px solid #e61d5f}.dg .cr.number{border-left:3px solid #2FA1D6}.dg .cr.number input[type=text]{color:#2FA1D6}.dg .cr.string{border-left:3px solid #1ed36f}.dg .cr.string input[type=text]{color:#1ed36f}.dg .cr.function:hover,.dg .cr.boolean:hover{background:#111}.dg .c input[type=text]{background:#303030;outline:none}.dg .c input[type=text]:hover{background:#3c3c3c}.dg .c input[type=text]:focus{background:#494949;color:#fff}.dg .c .slider{background:#303030;cursor:ew-resize}.dg .c .slider-fg{background:#2FA1D6;max-width:100%}.dg .c .slider:hover{background:#3c3c3c}.dg .c .slider:hover .slider-fg{background:#44abda}\n");
 
 css.inject(styleSheet);
 var CSS_NAMESPACE = 'dg';
@@ -2569,7 +2189,7 @@ function markPresetModified(gui, modified) {
 function augmentController(gui, li, controller) {
   controller.__li = li;
   controller.__gui = gui;
-  Common.extend(controller,                                   {
+  Common.extend(controller, {
     options: function options(_options) {
       if (arguments.length > 1) {
         var nextSibling = controller.__li.nextElementSibling;
@@ -53209,8 +52829,8 @@ if ( typeof window !== 'undefined' ) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "OrbitControls": () => (/* binding */ OrbitControls),
-/* harmony export */   "MapControls": () => (/* binding */ MapControls)
+/* harmony export */   "MapControls": () => (/* binding */ MapControls),
+/* harmony export */   "OrbitControls": () => (/* binding */ OrbitControls)
 /* harmony export */ });
 /* harmony import */ var _build_three_module_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../build/three.module.js */ "./node_modules/three/build/three.module.js");
 
@@ -54436,6 +54056,440 @@ MapControls.prototype.constructor = MapControls;
 
 
 
+/***/ }),
+
+/***/ "./src/helpers.ts":
+/*!************************!*\
+  !*** ./src/helpers.ts ***!
+  \************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ThreeViz = void 0;
+const THREE = __importStar(__webpack_require__(/*! three */ "./node_modules/three/build/three.module.js"));
+const dat = __importStar(__webpack_require__(/*! dat.gui */ "./node_modules/dat.gui/build/dat.gui.module.js"));
+const OrbitControls_js_1 = __webpack_require__(/*! three/examples/jsm/controls/OrbitControls.js */ "./node_modules/three/examples/jsm/controls/OrbitControls.js");
+class ThreeViz {
+    constructor(fov, width, height) {
+        this.scene = new THREE.Scene();
+        this.ray_caster = new THREE.Raycaster();
+        this.gui = new dat.GUI({ autoPlace: true });
+        this.renderer = new THREE.WebGLRenderer();
+        this.grid = new THREE.GridHelper(10, 10);
+        this.loader = new THREE.TextureLoader();
+        this.settings = { fov: 75, status: "none", default_cam: () => { this.set_default_position(); }, clear_all: () => { this.clear_all_objects(); } };
+        this.camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 1000);
+        this.light = new THREE.AmbientLight(0x404040); // soft white light
+        this.light.intensity = 10;
+        this.scene.add(this.light);
+        this.scene.background = new THREE.Color(0xf0f0f0);
+        this.objects = {};
+        this.renderer.setSize(width, height);
+        this.set_up(this.camera);
+        this.set_up(this.grid);
+        this.grid.name = "rootgrid";
+        this.set_orientation(this.grid, THREE.MathUtils.degToRad(90), 0, 0);
+        this.scene.add(this.grid);
+        let gridmat = this._get_first_mat(this.grid);
+        gridmat.opacity = 0.25;
+        gridmat.transparent = true;
+        this.controls = new OrbitControls_js_1.OrbitControls(this.camera, this.renderer.domElement);
+        this.set_default_position();
+        this.reload_camera_posision();
+        this.controls.addEventListener("change", () => { sessionStorage.setItem("camera_position", JSON.stringify(this.camera.position)); sessionStorage.setItem("camera_quat", JSON.stringify(this.camera.quaternion)); });
+        this.add_axes('root', null, null, 0.2);
+        this.gui.add(this.settings, "status");
+        this.gui.add(this.settings, "fov", 50, 100).onChange((v) => { this.camera.fov = v; this.camera.updateProjectionMatrix(); });
+        this.gui.add(this.settings, "default_cam");
+        this.gui.add(this.settings, "clear_all");
+    }
+    move_camera(x, y, z, lx, ly, lz) {
+        this.camera.position.x = x;
+        this.camera.position.y = y;
+        this.camera.position.z = z;
+        this.camera.lookAt(lx, ly, lz);
+        this.controls.target = new THREE.Vector3(lx, ly, lz);
+        this.camera.updateProjectionMatrix();
+    }
+    set_default_position() {
+        this.move_camera(5, 5, 5, 0, 0, 0);
+    }
+    reload_camera_posision() {
+        var pos_str = sessionStorage.getItem("camera_position");
+        if (pos_str == null) {
+            return;
+        }
+        var pos = JSON.parse(pos_str);
+        this.camera.position.x = pos.x;
+        this.camera.position.y = pos.y;
+        this.camera.position.z = pos.z;
+        var pos_str = sessionStorage.getItem("camera_quat");
+        if (pos_str == null) {
+            return;
+        }
+        var pos = JSON.parse(pos_str);
+        this.camera.quaternion.x = pos._x;
+        this.camera.quaternion.y = pos._y;
+        this.camera.quaternion.z = pos._z;
+        this.camera.quaternion.w = pos._w;
+    }
+    update_size(width, height) {
+        this.renderer.setSize(width, height);
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+    }
+    render() { this.renderer.render(this.scene, this.camera); }
+    set_up(obj) { obj.up = new THREE.Vector3(0, 0, 1); }
+    _get_first_mat(obj) {
+        let mat;
+        if (obj.material instanceof THREE.Material) {
+            mat = obj.material;
+        }
+        else {
+            mat = obj.material[0];
+        }
+        return mat;
+    }
+    _apply_xyz(prop, x, y, z) {
+        prop.x = x;
+        prop.y = y;
+        prop.z = z;
+    }
+    set_orientation(obj, x, y, z, w = null) {
+        if (w != null) {
+            obj.setRotationFromQuaternion(new THREE.Quaternion(x, y, z, w));
+        }
+        else {
+            obj.setRotationFromEuler(new THREE.Euler(x, y, z));
+        }
+    }
+    set_position(obj, x, y, z) {
+        this._apply_xyz(obj.position, x, y, z);
+    }
+    set_scale(obj, x, y, z) {
+        this._apply_xyz(obj.scale, x, y, z);
+    }
+    _set_position_orientation_if_provided(obj, position, orientation) {
+        let p = position;
+        if (p != null) {
+            this.set_position(obj, p.x, p.y, p.z);
+        }
+        let q = orientation;
+        if (q != null) {
+            this.set_orientation(obj, q.x, q.y, q.z, q.w);
+        }
+    }
+    _add_obj(obj, label) {
+        this.set_up(obj);
+        this.objects[label] = obj;
+        this.scene.add(obj);
+        obj.name = label;
+    }
+    add_cube_cloud(label, position, orientation, color = "#ff0000", xarr, yarr, zarr, opacity = 1.0, point_size = 0.1) {
+        let geometry = new THREE.BoxBufferGeometry(point_size, point_size, point_size);
+        var wireframe = new THREE.WireframeGeometry(geometry);
+        let material = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: opacity });
+        var group = new THREE.Group();
+        for (var i = 0; i < xarr.length; i++) {
+            var cube = new THREE.Mesh(geometry, material);
+            cube.name = label;
+            cube.position.set(xarr[i], yarr[i], zarr[i]);
+            group.add(cube);
+        }
+        this._add_obj(group, label);
+        group.name = label;
+        this._set_position_orientation_if_provided(group, position, orientation);
+    }
+    delete_object(label) {
+        var obj = this.objects[label];
+        this.scene.remove(obj);
+        var geom = obj.geometry;
+        geom.dispose();
+        delete this.objects[label];
+    }
+    clear_all_objects() {
+        for (var label in this.objects) {
+            this.delete_object(label);
+        }
+        this.add_axes('root', null, null, 0.2);
+    }
+    add_axes(label, position, orientation, size = 1.0) {
+        let axes;
+        if (label in this.objects) {
+            axes = this.objects[label];
+        }
+        else {
+            axes = new THREE.AxesHelper(1);
+            axes.name = label;
+            this._add_obj(axes, label);
+        }
+        this.set_scale(axes, size, size, size);
+        this._set_position_orientation_if_provided(axes, position, orientation);
+    }
+    add_plane_texture(label, texture_uri, position, orientation, scale_x = 1.0, scale_y = 1.0, opacity = 1.0) {
+        // var uri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg =="
+        let plane;
+        // var tex = THREE.ImageUtils.loadTexture(texture_uri);
+        var tex = new THREE.TextureLoader().load(texture_uri);
+        if (label in this.objects) {
+            plane = this.objects[label];
+        }
+        else {
+            var geom = new THREE.PlaneGeometry();
+            var material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+            material.transparent = true;
+            plane = new THREE.Mesh(geom, material);
+            this._add_obj(plane, label);
+        }
+        this._set_position_orientation_if_provided(plane, position, orientation);
+        var mat = plane.material;
+        mat.map = tex;
+        mat.opacity = opacity;
+        plane.scale.set(scale_x, scale_y, 1.0);
+    }
+    add_plane(label, position, orientation, color = "#ff0000", scale_x = 1.0, scale_y = 1.0, opacity = 1.0) {
+        let plane;
+        if (label in this.objects) {
+            plane = this.objects[label];
+        }
+        else {
+            var geom = new THREE.PlaneGeometry();
+            var material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+            plane = new THREE.Mesh(geom, material);
+            this._add_obj(plane, label);
+        }
+        this._set_position_orientation_if_provided(plane, position, orientation);
+        var mat = plane.material;
+        mat.color.set(color);
+        mat.opacity = opacity;
+        plane.scale.set(scale_x, scale_y, 1.0);
+    }
+    add_pointcloud(label, position, orientation, color = "#ff0000", point_arrays, opacity = 1.0, point_size = 0.1) {
+        let obj;
+        if (label in this.objects) {
+            obj = this.objects[label];
+            let geom = obj.geometry;
+            this.scene.remove(obj);
+            geom.dispose();
+        }
+        let mat = new THREE.PointsMaterial({
+            color: new THREE.Color(color), size: point_size,
+            transparent: true, opacity: opacity
+        });
+        let geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(point_arrays), 3));
+        obj = new THREE.Points(geom, mat);
+        this._add_obj(obj, label);
+        mat.color = new THREE.Color(color);
+        mat.opacity = opacity;
+        this._set_position_orientation_if_provided(obj, position, orientation);
+    }
+    add_line(label, point_arrays, color = "#000000", thickness = 0.1, opacity = 1.0) {
+        let obj;
+        if (label in this.objects) {
+            obj = this.objects[label];
+            this.scene.remove(obj);
+        }
+        let mat = new THREE.LineBasicMaterial({
+            color: new THREE.Color(color), linewidth: thickness,
+            transparent: true, opacity: opacity
+        });
+        let geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(point_arrays), 3));
+        obj = new THREE.Line(geom, mat);
+        this._add_obj(obj, label);
+    }
+    _snapshot() {
+        let strMime = "image/png";
+        return this.renderer.domElement.toDataURL(strMime);
+    }
+}
+exports.ThreeViz = ThreeViz;
+
+
+/***/ }),
+
+/***/ "./src/index.ts":
+/*!**********************!*\
+  !*** ./src/index.ts ***!
+  \**********************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const helpers_1 = __webpack_require__(/*! ./helpers */ "./src/helpers.ts");
+const THREE = __importStar(__webpack_require__(/*! three */ "./node_modules/three/build/three.module.js"));
+const messagepack_1 = __webpack_require__(/*! messagepack */ "./node_modules/messagepack/dist/messagepack.es.js");
+let padding = 20;
+let winWidth = window.innerWidth;
+let winHeight = window.innerHeight;
+let scn = new helpers_1.ThreeViz(75, window.innerWidth - padding, window.innerHeight - padding);
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+let port = urlParams.get('port');
+if (port == null) {
+    port = '8765';
+}
+let host = urlParams.get('host');
+if (host == null) {
+    host = "localhost";
+}
+else {
+    host = window.location.host;
+    host = host.split(":")[0];
+}
+function startWebsocket() {
+    let ws;
+    ws = new WebSocket('ws://' + host + ":" + port + '/ws');
+    ws.onclose = function () {
+        ws = null;
+        setTimeout(startWebsocket, 1250);
+    };
+    ws.onmessage = function (ev) {
+        ev.data.arrayBuffer().then(function (val) {
+            let data = (0, messagepack_1.decode)(val);
+            if (data.type == "clear") {
+                scn.clear_all_objects();
+            }
+            if (data.type == "delete") {
+                scn.delete_object(data.label);
+            }
+            if (data.type == "move_camera") {
+                scn.move_camera(data.x, data.y, data.z, data.lx, data.ly, data.lz);
+            }
+            if (data.type == "axes") {
+                scn.add_axes(data.label, data.position, data.orientation, data.size);
+            }
+            else if (data.type == "axes_list") {
+                for (var i = 0; i < data.elements.length; i++) {
+                    var el = data.elements[i];
+                    scn.add_axes(el.label, el.position, el.orientation, el.size);
+                }
+            }
+            else if (data.type == "pointcloud") {
+                scn.add_pointcloud(data.label, data.position, data.orientation, data.color, data.arrs, data.opacity, data.size);
+            }
+            else if (data.type == "cubecloud") {
+                scn.add_cube_cloud(data.label, data.position, data.orientation, data.color, data.xarr, data.yarr, data.zarr, data.opacity, data.size);
+            }
+            else if (data.type == "line") {
+                scn.add_line(data.label, data.positions, data.color, data.thickness, data.opacity);
+            }
+            else if (data.type == "plane") {
+                scn.add_plane(data.label, data.position, data.orientation, data.scale_x, data.scale_y);
+            }
+            else if (data.type == "plane_tex") {
+                scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y, data.opacity);
+            }
+        });
+    };
+}
+console.log(scn);
+const raycaster = new THREE.Raycaster();
+raycaster.params.Points.threshold = 0.05;
+console.log(raycaster);
+const pointer = new THREE.Vector2();
+const wpointer = new THREE.Vector2();
+const infodiv = document.createElement("div");
+infodiv.innerHTML = "hey";
+infodiv.setAttribute("id", "infodiv");
+infodiv.style.top = "-1000px";
+infodiv.style.left = "-1000px";
+document.body.appendChild(infodiv);
+document.body.appendChild(scn.renderer.domElement);
+function animate() {
+    setTimeout(function () {
+        requestAnimationFrame(animate);
+    }, 1000 / 60);
+    if (wpointer.x > 0 && wpointer.y > 0) {
+        raycaster.setFromCamera(pointer, scn.camera);
+        const intersects = raycaster.intersectObjects(scn.scene.children, true);
+        var lehtml = "";
+        // console.log(intersects);
+        infodiv.style.visibility = "hidden";
+        for (let i = 0; i < intersects.length; i++) {
+            var intr = intersects[i];
+            if (intr.object.name == "root" || intr.object.name == "rootgrid") {
+                continue;
+            }
+            // console.log(intr.object.name);
+            // console.log(intr);
+            infodiv.style.top = (wpointer.y + 10) + "px";
+            infodiv.style.left = (wpointer.x + 10) + "px";
+            if (!lehtml.includes(intr.object.name)) {
+                lehtml += intr.object.name + "<br/>";
+            }
+            infodiv.style.visibility = "visible";
+        }
+        infodiv.innerHTML = lehtml;
+        wpointer.x = -1;
+        wpointer.y = -1;
+    }
+    scn.render();
+    if (winWidth != window.innerWidth || winHeight != window.innerHeight) {
+        winWidth = window.innerWidth;
+        winHeight = window.innerHeight;
+        scn.update_size(winWidth - padding, winHeight - padding);
+    }
+}
+function onPointerMove(event) {
+    wpointer.x = event.clientX;
+    wpointer.y = event.clientY;
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+}
+window.addEventListener('pointermove', onPointerMove);
+startWebsocket();
+animate();
+
+
 /***/ })
 
 /******/ 	});
@@ -54446,8 +54500,9 @@ MapControls.prototype.constructor = MapControls;
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
@@ -54493,10 +54548,12 @@ MapControls.prototype.constructor = MapControls;
 /******/ 	})();
 /******/ 	
 /************************************************************************/
+/******/ 	
 /******/ 	// startup
-/******/ 	// Load entry module
+/******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	__webpack_require__("./src/index.ts");
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/index.ts");
+/******/ 	
 /******/ })()
 ;
 //# sourceMappingURL=index.js.map
