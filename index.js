@@ -54279,6 +54279,7 @@ class ThreeViz {
         else {
             var geom = new THREE.PlaneGeometry();
             var material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+            material.transparent = true;
             plane = new THREE.Mesh(geom, material);
             this._add_obj(plane, label);
         }
@@ -54288,7 +54289,25 @@ class ThreeViz {
         mat.opacity = opacity;
         plane.scale.set(scale_x, scale_y, 1.0);
     }
-    add_pointcloud(label, position, orientation, color = "#ff0000", point_arrays, opacity = 1.0, point_size = 0.1) {
+    add_cylinder(label, position, orientation, color = "#ff0000", opacity = 1.0, radius = 1.0, height = 1.0) {
+        let cyl;
+        if (label in this.objects) {
+            cyl = this.objects[label];
+        }
+        else {
+            var geom = new THREE.CylinderGeometry(radius, radius, height, 36);
+            var material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
+            material.transparent = true;
+            cyl = new THREE.Mesh(geom, material);
+            this._add_obj(cyl, label);
+        }
+        this._set_position_orientation_if_provided(cyl, position, orientation);
+        var mat = cyl.material;
+        mat.color.set(color);
+        mat.opacity = opacity;
+        console.log(opacity);
+    }
+    add_pointcloud(label, position, orientation, point_arrays, color = "#ff0000", opacity = 1.0, point_size = 0.1) {
         let obj;
         if (label in this.objects) {
             obj = this.objects[label];
@@ -54308,7 +54327,7 @@ class ThreeViz {
         mat.opacity = opacity;
         this._set_position_orientation_if_provided(obj, position, orientation);
     }
-    add_line(label, point_arrays, color = "#000000", thickness = 0.1, opacity = 1.0) {
+    add_line(label, position, orientation, point_arrays, color = "#000000", thickness = 0.1, opacity = 1.0) {
         let obj;
         if (label in this.objects) {
             obj = this.objects[label];
@@ -54322,6 +54341,7 @@ class ThreeViz {
         geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(point_arrays), 3));
         obj = new THREE.Line(geom, mat);
         this._add_obj(obj, label);
+        this._set_position_orientation_if_provided(obj, position, orientation);
     }
     _snapshot() {
         let strMime = "image/png";
@@ -54414,16 +54434,19 @@ function startWebsocket() {
                 }
             }
             else if (data.type == "pointcloud") {
-                scn.add_pointcloud(data.label, data.position, data.orientation, data.color, data.arrs, data.opacity, data.size);
+                scn.add_pointcloud(data.label, data.position, data.orientation, data.arrs, data.color, data.opacity, data.size);
             }
             else if (data.type == "cubecloud") {
                 scn.add_cube_cloud(data.label, data.position, data.orientation, data.color, data.xarr, data.yarr, data.zarr, data.opacity, data.size);
             }
             else if (data.type == "line") {
-                scn.add_line(data.label, data.positions, data.color, data.thickness, data.opacity);
+                scn.add_line(data.label, data.position, data.orientation, data.positions, data.color, data.thickness, data.opacity);
             }
             else if (data.type == "plane") {
                 scn.add_plane(data.label, data.position, data.orientation, data.scale_x, data.scale_y);
+            }
+            else if (data.type == "cylinder") {
+                scn.add_cylinder(data.label, data.position, data.orientation, data.color, data.opacity, data.radius, data.height);
             }
             else if (data.type == "plane_tex") {
                 scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y, data.opacity);
@@ -54433,7 +54456,9 @@ function startWebsocket() {
 }
 console.log(scn);
 const raycaster = new THREE.Raycaster();
-raycaster.params.Points.threshold = 0.05;
+raycaster.params.Points.threshold = 0.1;
+raycaster.params.Line.threshold = 0.1;
+raycaster.params.Mesh.threshold = 0.1;
 console.log(raycaster);
 const pointer = new THREE.Vector2();
 const wpointer = new THREE.Vector2();
