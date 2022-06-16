@@ -54405,6 +54405,44 @@ else {
     host = window.location.host;
     host = host.split(":")[0];
 }
+function process_cmd(data) {
+    if (data.type == "clear") {
+        scn.clear_all_objects();
+    }
+    if (data.type == "delete") {
+        scn.delete_object(data.label);
+    }
+    if (data.type == "move_camera") {
+        scn.move_camera(data.x, data.y, data.z, data.lx, data.ly, data.lz);
+    }
+    if (data.type == "axes") {
+        scn.add_axes(data.label, data.position, data.orientation, data.size);
+    }
+    else if (data.type == "axes_list") {
+        for (var i = 0; i < data.elements.length; i++) {
+            var el = data.elements[i];
+            scn.add_axes(el.label, el.position, el.orientation, el.size);
+        }
+    }
+    else if (data.type == "pointcloud") {
+        scn.add_pointcloud(data.label, data.position, data.orientation, data.arrs, data.color, data.opacity, data.size);
+    }
+    else if (data.type == "cubecloud") {
+        scn.add_cube_cloud(data.label, data.position, data.orientation, data.color, data.xarr, data.yarr, data.zarr, data.opacity, data.size);
+    }
+    else if (data.type == "line") {
+        scn.add_line(data.label, data.position, data.orientation, data.positions, data.color, data.thickness, data.opacity);
+    }
+    else if (data.type == "plane") {
+        scn.add_plane(data.label, data.position, data.orientation, data.scale_x, data.scale_y);
+    }
+    else if (data.type == "cylinder") {
+        scn.add_cylinder(data.label, data.position, data.orientation, data.color, data.opacity, data.radius, data.height);
+    }
+    else if (data.type == "plane_tex") {
+        scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y, data.opacity);
+    }
+}
 function startWebsocket() {
     let ws;
     ws = new WebSocket('ws://' + host + ":" + port + '/ws');
@@ -54415,42 +54453,7 @@ function startWebsocket() {
     ws.onmessage = function (ev) {
         ev.data.arrayBuffer().then(function (val) {
             let data = (0, messagepack_1.decode)(val);
-            if (data.type == "clear") {
-                scn.clear_all_objects();
-            }
-            if (data.type == "delete") {
-                scn.delete_object(data.label);
-            }
-            if (data.type == "move_camera") {
-                scn.move_camera(data.x, data.y, data.z, data.lx, data.ly, data.lz);
-            }
-            if (data.type == "axes") {
-                scn.add_axes(data.label, data.position, data.orientation, data.size);
-            }
-            else if (data.type == "axes_list") {
-                for (var i = 0; i < data.elements.length; i++) {
-                    var el = data.elements[i];
-                    scn.add_axes(el.label, el.position, el.orientation, el.size);
-                }
-            }
-            else if (data.type == "pointcloud") {
-                scn.add_pointcloud(data.label, data.position, data.orientation, data.arrs, data.color, data.opacity, data.size);
-            }
-            else if (data.type == "cubecloud") {
-                scn.add_cube_cloud(data.label, data.position, data.orientation, data.color, data.xarr, data.yarr, data.zarr, data.opacity, data.size);
-            }
-            else if (data.type == "line") {
-                scn.add_line(data.label, data.position, data.orientation, data.positions, data.color, data.thickness, data.opacity);
-            }
-            else if (data.type == "plane") {
-                scn.add_plane(data.label, data.position, data.orientation, data.scale_x, data.scale_y);
-            }
-            else if (data.type == "cylinder") {
-                scn.add_cylinder(data.label, data.position, data.orientation, data.color, data.opacity, data.radius, data.height);
-            }
-            else if (data.type == "plane_tex") {
-                scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y, data.opacity);
-            }
+            process_cmd(data);
         });
     };
 }
@@ -54467,8 +54470,18 @@ infodiv.innerHTML = "hey";
 infodiv.setAttribute("id", "infodiv");
 infodiv.style.top = "-1000px";
 infodiv.style.left = "-1000px";
+const fileinput = document.createElement("input");
+fileinput.type = "file";
+fileinput.addEventListener('change', function (e) {
+    (e.target).files[0].text().then(function (v) {
+        let res = JSON.parse(v);
+        console.log(res);
+        res.forEach(process_cmd);
+    });
+});
 document.body.appendChild(infodiv);
 document.body.appendChild(scn.renderer.domElement);
+document.body.appendChild(fileinput);
 function animate() {
     setTimeout(function () {
         requestAnimationFrame(animate);
