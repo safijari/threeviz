@@ -58008,7 +58008,10 @@ class ThreeViz {
         this.grid = new THREE.GridHelper(10, 10);
         this.loader = new THREE.TextureLoader();
         this.model_loader = new GLTFLoader_js_1.GLTFLoader();
+        this.font_loader = new THREE.FontLoader();
+        this.font = null;
         this.settings = { fov: 75, status: "none", default_cam: () => { this.set_default_position(); }, clear_all: () => { this.clear_all_objects(); } };
+        this.font_loader.load("helvetiker_regular.typeface.json", (font) => { this.font = font; console.log(font); }, (e) => { }, (e) => { console.log("error"); console.log(e); });
         this.camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 1000);
         this.light = new THREE.PointLight(0x404040); // soft white light
         this.light.intensity = 6;
@@ -58205,6 +58208,33 @@ class ThreeViz {
         mat.opacity = opacity;
         plane.scale.set(scale_x, scale_y, 1.0);
     }
+    add_text(label, position, orientation, color = "#ff0000", scale_x = 1.0, scale_y = 1.0, opacity = 1.0, text = "text") {
+        if (this.font == null) {
+            console.log("Font was null");
+            return;
+        }
+        let obj;
+        if (label in this.objects) {
+            obj = this.objects[label];
+        }
+        else {
+            var geom = new THREE.TextGeometry(text, {
+                font: this.font,
+                size: 1,
+                height: 0,
+                curveSegments: 12,
+            });
+            var material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+            material.transparent = true;
+            obj = new THREE.Mesh(geom, material);
+            this._add_obj(obj, label);
+        }
+        this._set_position_orientation_if_provided(obj, position, orientation);
+        var mat = obj.material;
+        mat.color.set(color);
+        mat.opacity = opacity;
+        obj.scale.set(scale_x, scale_y, 1.0);
+    }
     add_cylinder(label, position, orientation, color = "#ff0000", opacity = 1.0, radius = 1.0, height = 1.0) {
         let cyl;
         if (label in this.objects) {
@@ -58358,6 +58388,9 @@ function process_cmd(data) {
     else if (data.type == "plane_tex") {
         scn.add_plane_texture(data.label, data.uri, data.position, data.orientation, data.scale_x, data.scale_y, data.opacity);
     }
+    else if (data.type == "text") {
+        scn.add_text(data.label, data.position, data.orientation, data.color, data.scale_x, data.scale_y, data.opacity, data.text);
+    }
 }
 function startWebsocket() {
     let ws;
@@ -58391,7 +58424,6 @@ fileinput.type = "file";
 fileinput.addEventListener('change', function (e) {
     (e.target).files[0].text().then(function (v) {
         let res = JSON.parse(v);
-        // console.log(res);
         res.forEach(process_cmd);
         (e.target).value = "";
     });
@@ -58457,6 +58489,7 @@ window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('keydown', onKeyDown);
 startWebsocket();
 animate();
+// setTimeout(() => { scn.add_text("testtext", null, null, "red", 1, 1, 1.0, "testtest"); }, 1000)
 
 
 /***/ })
