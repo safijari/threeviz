@@ -58394,7 +58394,7 @@ function process_cmd(data) {
 }
 function startWebsocket() {
     let ws;
-    ws = new WebSocket('ws://' + host + ":" + port + '/ws');
+    ws = new WebSocket('wss://' + host + ":" + port + '/ws');
     ws.onclose = function () {
         ws = null;
         setTimeout(startWebsocket, 1250);
