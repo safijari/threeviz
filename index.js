@@ -58253,6 +58253,26 @@ class ThreeViz {
         mat.opacity = opacity;
         console.log(opacity);
     }
+    add_pointcloud_with_per_point_color(label, position, orientation, point_arrays, color_arrays, opacity = 1.0, point_size = 0.1) {
+        let obj;
+        if (label in this.objects) {
+            obj = this.objects[label];
+            let geom = obj.geometry;
+            this.scene.remove(obj);
+            geom.dispose();
+        }
+        let mat = new THREE.PointsMaterial({
+            size: point_size, vertexColors: true,
+            transparent: true, opacity: opacity
+        });
+        let geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(point_arrays), 3));
+        geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(color_arrays), 3));
+        obj = new THREE.Points(geom, mat);
+        this._add_obj(obj, label);
+        mat.opacity = opacity;
+        this._set_position_orientation_if_provided(obj, position, orientation);
+    }
     add_pointcloud(label, position, orientation, point_arrays, color = "#ff0000", opacity = 1.0, point_size = 0.1) {
         let obj;
         if (label in this.objects) {
@@ -58372,6 +58392,9 @@ function process_cmd(data) {
     }
     else if (data.type == "pointcloud") {
         scn.add_pointcloud(data.label, data.position, data.orientation, data.arrs, data.color, data.opacity, data.size);
+    }
+    else if (data.type == "pointcloud_with_per_point_color") {
+        scn.add_pointcloud_with_per_point_color(data.label, data.position, data.orientation, data.arrs, data.color_arrs, data.opacity, data.size);
     }
     else if (data.type == "cubecloud") {
         scn.add_cube_cloud(data.label, data.position, data.orientation, data.color, data.xarr, data.yarr, data.zarr, data.opacity, data.size);
